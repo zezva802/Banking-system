@@ -3,6 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CommonModule } from './common/common.module';
+import { OperatorModule } from './operator/operator.module';
 
 @Module({
   imports: [
@@ -21,7 +23,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: true
       })
-    })
+    }),
+    CommonModule,
+    OperatorModule
   ],
   controllers: [AppController],
   providers: [AppService],
