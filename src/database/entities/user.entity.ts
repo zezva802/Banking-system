@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, DeleteDateColumn} from "typeorm";
 import { Account } from "./account.entity";
 import { UserRole } from "../enums";
+import { Exclude } from "class-transformer";
 
 @Entity('users')
 export class User {
@@ -23,6 +24,7 @@ export class User {
     email: string;
 
     @Column()
+    @Exclude()
     password: string;
 
     @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })

@@ -15,10 +15,12 @@ export class CardService {
         private readonly cryptoService: CryptoService
     ) {}
 
-    private async generateUniqueCardNumber(): Promise<string> {
-        const count = await this.cardRepository.count();
-        const newNumber = (4169738800000000 + count + 1).toString();
-        return newNumber;
+    private generateCardNumber(): string {
+        const prefix = '41697388';
+        const random = Math.floor(Math.random() * 1e8)
+                            .toString()
+                            .padStart(8, '0');
+        return prefix + random;
     }
 
     async createCard(accountId: string, pin: string) {
@@ -35,8 +37,6 @@ export class CardService {
             throw new NotFoundException('Account not found')
         }
 
-        const cardNumber = await this.generateUniqueCardNumber();
-
         const hashedPin = await this.cryptoService.hashPin(pin);
 
         const cardholderName = `${account.user.name} ${account.user.surname}`;
@@ -47,21 +47,30 @@ export class CardService {
 
         const expirationYear = today.getFullYear() + 3;
         
-        const card = this.cardRepository.create({
-            cardNumber,
-            cardholderName,
-            expirationMonth,
-            expirationYear,
-            pin: hashedPin,
-            account,
-        });
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        while(true) {
+            try {
+                const card = this.cardRepository.create({
+                    cardNumber: this.generateCardNumber(),
+                    cardholderName,
+                    expirationMonth,
+                    expirationYear,
+                    pin: hashedPin,
+                    account,
+                });
 
-        await this.cardRepository.save(card);
+                await this.cardRepository.save(card);
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {pin:_pin, ...safeCard} = card;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const {pin: _pin, account: _account, ...safeCard} = card;
 
-        return safeCard;
+                return safeCard;
+            } catch(err) {
+                if (err.code !== '23505') {
+                    throw err;
+                }
+            }
+        }
 
     }
 }

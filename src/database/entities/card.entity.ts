@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Account } from "./account.entity";
 import { AtmOperation } from "./atmOperation.entity";
+import { Exclude } from "class-transformer";
 
 @Entity('cards')
 export class Card{
@@ -19,7 +20,8 @@ export class Card{
     @Column()
     expirationYear: number;
 
-    @Column({length: 4})
+    @Column({length: 60})
+    @Exclude()
     pin: string;
 
     @ManyToOne(()=> Account, account => account.cards, {nullable: false})
