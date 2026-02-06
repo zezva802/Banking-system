@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonModule } from './common/common.module';
 import { OperatorModule } from './operator/operator.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { OperatorModule } from './operator/operator.module';
       })
     }),
     CommonModule,
-    OperatorModule
+    OperatorModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
