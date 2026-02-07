@@ -13,6 +13,7 @@ export class IbanValidatorService {
     }
 
     async generate(accountRepository: Repository<Account>): Promise<string> {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         while (true) {
             const accountNumber = Math.floor(Math.random() * 1e16)
                                         .toString()

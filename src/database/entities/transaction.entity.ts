@@ -18,6 +18,9 @@ export class Transaction{
     @Column({type: 'decimal', precision: 15, scale: 2, default: 0})
     commission: number;
 
+    @Column({ type: 'decimal', precision: 5, scale: 4, default: 0})
+    commissionRate: number;
+
     @Column({type: 'enum', enum:TransactionType})
     transactionType: TransactionType;
 
