@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Card } from "src/database/entities/card.entity";
+import { Card } from "../../database/entities/card.entity";
 
 @Injectable()
 export class CardValidatorService{

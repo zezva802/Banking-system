@@ -1,5 +1,5 @@
 import { IsNumber, IsUUID, IsEnum, IsOptional, IsString } from "class-validator";
-import { Currency } from "src/database/enums";
+import { Currency } from "../../database/enums";
 
 export class CreateAccountDto {
     @IsUUID()

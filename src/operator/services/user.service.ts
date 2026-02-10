@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { CryptoService } from "src/common/services/crypto.service";
-import { User } from "src/database/entities/user.entity";
+import { CryptoService } from "../../common/services/crypto.service";
+import { User } from "../../database/entities/user.entity";
 import { Repository } from "typeorm";
 import { CreateUserDto } from "../dto/create-user.dto";
 

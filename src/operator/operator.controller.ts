@@ -5,10 +5,10 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { UsersService } from "./services/user.service";
 import { AccountService } from "./services/account.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
-import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { RolesGuard } from "src/auth/guards/roles.guard";
-import { Roles } from "src/common/decorators/roles.decorator";
-import { UserRole } from "src/database/enums";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../common/decorators/roles.decorator";
+import { UserRole } from "../database/enums";
 
 @Controller('operator')
 @UseGuards(JwtAuthGuard, RolesGuard)

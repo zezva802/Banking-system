@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { CryptoService } from "src/common/services/crypto.service";
-import { Account } from "src/database/entities/account.entity";
-import { Card } from "src/database/entities/card.entity";
+import { CryptoService } from "../../common/services/crypto.service";
+import { Account } from "../../database/entities/account.entity";
+import { Card } from "../../database/entities/card.entity";
 import { Repository } from "typeorm";
 
 @Injectable()

@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { IbanValidatorService } from "src/common/services/iban-validator.service";
-import { Account } from "src/database/entities/account.entity";
-import { User } from "src/database/entities/user.entity";
+import { IbanValidatorService } from "../../common/services/iban-validator.service";
+import { Account } from "../../database/entities/account.entity";
+import { User } from "../../database/entities/user.entity";
 import { Repository } from "typeorm";
 import { CreateAccountDto } from "../dto/create-account.dto";
 

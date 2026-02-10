@@ -1,6 +1,6 @@
 import { HttpException, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Currency } from "src/database/enums";
+import { Currency } from "../../database/enums";
 
 @Injectable()
 export class ExchangeRateService{

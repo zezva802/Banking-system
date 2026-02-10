@@ -1,14 +1,14 @@
 import { ForbiddenException, Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ExchangeRateService } from "src/common/services/exchange-rate.service";
-import { Account } from "src/database/entities/account.entity";
-import { Card } from "src/database/entities/card.entity";
+import { ExchangeRateService } from "../../common/services/exchange-rate.service";
+import { Account } from "../../database/entities/account.entity";
+import { Card } from "../../database/entities/card.entity";
 import { DataSource, Repository} from "typeorm";
-import { Transaction } from "src/database/entities/transaction.entity";
+import { Transaction } from "../../database/entities/transaction.entity";
 import { TransferOwnDto } from "../dto/transfer-own.dto";
-import { TransactionType, TransactionStatus} from "src/database/enums";
+import { TransactionType, TransactionStatus} from "../../database/enums";
 import { TransferOtherDto } from "../dto/transfer-other.dto";
-import { CommissionService } from "src/common/services/commission.service";
+import { CommissionService } from "../../common/services/commission.service";
 
 @Injectable()
 export class UserService{
@@ -57,7 +57,11 @@ export class UserService{
             }
         });
 
-        return cards;
+        return cards.map((card) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { pin, ...safeCard } = card;
+            return safeCard;
+        });
     }
 
     async transferOwn(userId: string, dto: TransferOwnDto) {
@@ -67,16 +71,26 @@ export class UserService{
 
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
+
+        const transaction = await this.transactionRepository.save({
+            amount: dto.amount,
+            currency: dto.currency,
+            commission: 0,
+            transactionType: TransactionType.OWN_ACCOUNT,
+            status: TransactionStatus.PENDING,
+            senderAccount: { id: dto.fromAccountId },
+            receiverAccount: { id: dto.toAccountId },
+        });
+
+
         await queryRunner.startTransaction();
 
-        let transactionId: string | null = null;
-
         try {
-            const from = await queryRunner.manager.findOne(Account, {
-                where: { id: dto.fromAccountId },
-                relations: { user: true },
-                lock: { mode: 'pessimistic_write' },
-            });
+            const from = await queryRunner.manager.createQueryBuilder(Account, 'account')
+                                                    .innerJoinAndSelect('account.user', 'user')
+                                                    .where('account.id = :id', {id: dto.fromAccountId})
+                                                    .setLock('pessimistic_write')
+                                                    .getOne();
 
             if (!from) {
                 throw new NotFoundException('Sender account not found');
@@ -87,12 +101,11 @@ export class UserService{
             }
 
 
-            const to = await queryRunner.manager.findOne(Account, {
-                where: { id: dto.toAccountId },
-                relations: { user: true },
-                lock: { mode: 'pessimistic_write' },
-            });
-
+            const to = await queryRunner.manager.createQueryBuilder(Account, 'account')
+                                                .innerJoinAndSelect('account.user', 'user')
+                                                .where('account.id = :id', {id: dto.toAccountId})
+                                                .setLock('pessimistic_write')
+                                                .getOne();
             if (!to) {
                 throw new NotFoundException('Receiver account not found');
             }
@@ -129,19 +142,6 @@ export class UserService{
             }
 
 
-            const transaction = queryRunner.manager.create(Transaction, {
-                amount: dto.amount,
-                currency: dto.currency,
-                commission: 0,
-                transactionType: TransactionType.OWN_ACCOUNT,
-                status: TransactionStatus.PENDING,
-                senderAccount: from,
-                receiverAccount: to,
-            });
-            await queryRunner.manager.save(Transaction, transaction);
-            transactionId = transaction.id;
-
-
             from.balance = Number(from.balance) - amountToDeduct;
             to.balance = Number(to.balance) + amountToAdd;
 
@@ -149,11 +149,12 @@ export class UserService{
             await queryRunner.manager.save(Account, to);
 
 
-            await queryRunner.manager.update(Transaction, transaction.id, {
+            await queryRunner.commitTransaction();
+
+
+            await this.transactionRepository.update(transaction.id, {
                 status: TransactionStatus.COMPLETED,
             });
-
-            await queryRunner.commitTransaction();
 
 
             return {
@@ -171,11 +172,10 @@ export class UserService{
         } catch (error) {
             await queryRunner.rollbackTransaction();
 
-            if(transactionId) {
-                await this.transactionRepository.update(transactionId, {
-                    status: TransactionStatus.FAILED
-                })
-            }
+            await this.transactionRepository.update(transaction.id, {
+                status: TransactionStatus.FAILED,
+            });
+
             throw error;
         } finally {
             await queryRunner.release();
@@ -185,16 +185,53 @@ export class UserService{
     async transferOther(userId: string, dto: TransferOtherDto) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
+
+        const receiver = await this.accountRepository.findOne({
+            where: {iban: dto.receiverIban}
+        });
+        if(!receiver){
+            throw new NotFoundException('receiver account not found');
+        }
+
+        const sender = await this.accountRepository.findOne({
+            where: {id: dto.fromAccountId}
+        });
+        if(!sender){
+            throw new NotFoundException('receiver account not found');
+        }
+
+        let amountToDeduct = dto.amount;
+
+        if(dto.currency !== sender.currency) {
+            amountToDeduct = await this.exchangeRateService.convert(
+                dto.amount,
+                dto.currency,
+                sender.currency,
+            );
+        }
+
+        const initialCommissionCalc = this.commissionService.calculateTransferOther(amountToDeduct);
+
+        const transaction = await this.transactionRepository.save({
+            amount: dto.amount,
+            currency: dto.currency,
+            commission: initialCommissionCalc.commission,
+            commissionRate: initialCommissionCalc.rate,
+            transactionType: TransactionType.OTHER_ACCOUNT,
+            status: TransactionStatus.PENDING,
+            senderAccount: { id: dto.fromAccountId },
+            receiverAccount: { id: receiver.id },
+        });
+
         await queryRunner.startTransaction();
         
-        let transactionId: string | null = null;
 
         try {
-            const from = await queryRunner.manager.findOne(Account, {
-                where: {id: dto.fromAccountId},
-                relations: { user: true },
-                lock: {mode: 'pessimistic_write'},
-            });
+            const from = await queryRunner.manager.createQueryBuilder(Account, 'account')
+                                                    .innerJoinAndSelect('account.user', 'user')
+                                                    .where('account.id = :id', {id: dto.fromAccountId})
+                                                    .setLock('pessimistic_write')
+                                                    .getOne();
 
             if(!from) {
                 throw new NotFoundException('Sender account not found');
@@ -204,11 +241,11 @@ export class UserService{
                 throw new ForbiddenException('You can only transfer from your own accounts');
             }
 
-            const to = await queryRunner.manager.findOne(Account, {
-                where: {iban: dto.receiverIban},
-                relations: {user: true},
-                lock: {mode: 'pessimistic_write'},
-            });
+            const to = await queryRunner.manager.createQueryBuilder(Account, 'account')
+                                                .innerJoinAndSelect('account.user', 'user')
+                                                .where('account.iban = :iban', {iban: dto.receiverIban})
+                                                .setLock('pessimistic_write')
+                                                .getOne();
 
             if(!to){
                 throw new NotFoundException('receiver account not found');
@@ -221,45 +258,26 @@ export class UserService{
             }
 
 
-            let amountToDeduct = dto.amount;
+            
             let amountToAdd = dto.amount;
 
-            if(dto.currency !== from.currency) {
-                amountToDeduct = await this.exchangeRateService.convert(
-                    dto.amount,
-                    dto.currency,
-                    from.currency,
-                );
-            }
+            
 
             if(dto.currency !== to.currency) {
                 amountToAdd = await this.exchangeRateService.convert(
                     dto.amount,
                     dto.currency,
-                    from.currency,
+                    to.currency,
                 );
             }
 
-            const {commission, rate} = this.commissionService.calculateTransferOther(amountToDeduct);
+            const {commission} = this.commissionService.calculateTransferOther(amountToDeduct);
             const totalDeduction = amountToDeduct + commission;
 
             if(Number(from.balance) < totalDeduction) {
                 throw new BadRequestException('Insufficient balance');
             }
 
-            const transaction = queryRunner.manager.create(Transaction, {
-                amount: dto.amount,
-                currency: dto.currency,
-                commission,
-                commissionRate: rate,
-                transactionType: TransactionType.OTHER_ACCOUNT,
-                status: TransactionStatus.PENDING,
-                senderAccount: from,
-                receiverAccount: to,
-            });
-
-            await queryRunner.manager.save(Transaction, transaction);
-            transactionId = transaction.id;
 
             from.balance = Number(from.balance) - totalDeduction;
             to.balance = Number(to.balance) + amountToAdd;
@@ -267,11 +285,11 @@ export class UserService{
             await queryRunner.manager.save(Account, from);
             await queryRunner.manager.save(Account, to);
 
+            await queryRunner.commitTransaction();
+
             await queryRunner.manager.update(Transaction, transaction.id, {
                 status: TransactionStatus.COMPLETED,
             });
-
-            await queryRunner.commitTransaction();
 
             return{
                 message: 'Transfer completed successfully',
@@ -280,6 +298,7 @@ export class UserService{
                     amount: transaction.amount,
                     currency: transaction.currency,
                     commission: transaction.commission,
+                    commissionRate: initialCommissionCalc.rate,
                     from: from.iban,
                     to: to.iban,
                     createdAt: transaction.createdAt,
@@ -288,11 +307,9 @@ export class UserService{
         } catch (error) {
             await queryRunner.rollbackTransaction();
 
-            if(transactionId) {
-                await this.transactionRepository.update(transactionId, {
-                    status: TransactionStatus.FAILED,
-                });
-            }
+            await this.transactionRepository.update(transaction.id, {
+                status: TransactionStatus.FAILED,
+            });
 
             throw error;
         } finally {

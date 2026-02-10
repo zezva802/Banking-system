@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CountryCode, IBAN, IBANBuilder } from "ibankit";
-import { Account } from "src/database/entities/account.entity";
+import { Account } from "../../database/entities/account.entity";
 import { Repository } from "typeorm";
 
 @Injectable()
