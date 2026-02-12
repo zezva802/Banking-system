@@ -7,6 +7,8 @@ import { CommonModule } from './common/common.module';
 import { OperatorModule } from './operator/operator.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { AtmModule } from './atm/atm.module';
+import { ReportsModule } from './report/reports.module';
 
 @Module({
   imports: [
@@ -23,13 +25,14 @@ import { UserModule } from './user/user.module';
         database: configService.get('DATABASE_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: configService.get('NODE_ENV') === 'development',
-        logging: true
       })
     }),
     CommonModule,
     OperatorModule,
     AuthModule,
     UserModule,
+    AtmModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

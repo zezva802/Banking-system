@@ -15,7 +15,7 @@ import { CommissionService } from "../common/services/commission.service";
 import { ExchangeRateService } from "../common/services/exchange-rate.service";
 import { ConfigService } from "@nestjs/config";
 import { ChangePinDto } from "./dto/change-pin.dto";
-import { DataSource } from "typeorm/browser";
+import { DataSource } from "typeorm";
 
 @Injectable()
 export class AtmService{

@@ -94,7 +94,7 @@ describe('UserController (e2e)', () => {
         const operator = await operatorUsersService.createUser({
             name: 'Test',
             surname: 'Operator',
-            privateNumber: '12345678901',
+            privateNumber: '12345678910',
             dateOfBirth: new Date('1990-01-01'),
             email: 'operator@example.com',
             password: 'StrongPassword1!',
@@ -565,7 +565,7 @@ describe('UserController (e2e)', () => {
 
             expect(mockExchangeRateService.convert).not.toHaveBeenCalled();
             expect(mockExchangeRateService.getRate).not.toHaveBeenCalled();
-        });
+            });
     });
 
     
