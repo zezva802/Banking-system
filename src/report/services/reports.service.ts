@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ExchangeRateService } from "src/common/services/exchange-rate.service";
-import { AtmOperation } from "src/database/entities/atmOperation.entity";
-import { Transaction } from "src/database/entities/transaction.entity";
-import { User } from "src/database/entities/user.entity";
-import { AtmOperationType, Currency, TransactionStatus } from "src/database/enums";
+import { ExchangeRateService } from "../../common/services/exchange-rate.service";
+import { AtmOperation } from "../../database/entities/atmOperation.entity";
+import { Transaction } from "../../database/entities/transaction.entity";
+import { User } from "../../database/entities/user.entity";
+import { AtmOperationType, Currency, TransactionStatus } from "../../database/enums";
 import { Between, DataSource, MoreThanOrEqual, Repository } from "typeorm";
 
 @Injectable()

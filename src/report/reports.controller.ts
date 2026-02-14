@@ -1,8 +1,8 @@
 import { Controller, UseGuards, Get } from "@nestjs/common";
-import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { RolesGuard } from "src/auth/guards/roles.guard";
-import { Roles } from "src/common/decorators/roles.decorator";
-import { UserRole } from "src/database/enums";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../common/decorators/roles.decorator";
+import { UserRole } from "../database/enums";
 import { ReportsService } from "./services/reports.service";
 
 @Controller('reports')
